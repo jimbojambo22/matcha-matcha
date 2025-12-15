@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Matcha! Matcha! Card Game</title>
+        <link rel="stylesheet" href="style.css">
+        <link rel="preconnect" href="https://fonts.googleapis.com">
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&display=swap" rel="stylesheet">
+    </head>
+    <body>
+
+        <h1 id="gameTitle">Matcha! Matcha!</h1>
+        <h2 id="subtitle">A push‑your‑luck matching game</h2>
+
+        <select id="playerCount">
+            <option value="1">1 Player</option>
+            <option value="2">2 Player</option>
+            <option value="3">3 Player</option>
+            <option value="4">4 Player</option>
+            <option value="5">5 Player</option>
+            <option value="6">6 Player</option>
+        </select>
+        <select id="scoringMode">
+            <option value="free">Free Scoring</option>
+            <option value="tokens">Score Tokens</option>
+            <option value="trade">Score Tokens w/ Trade-In</option>
+        </select>
+
+        <button id="newGameButton">Start New Game</button>
+        <button id="rulebookButton">Rulebook</button>
+
+        <div id="playerDisplay">Current Player: 1</div>
+
+        <!--- <button id="matchButton">Match</button>
+        <button id="noMatchButton">No Match</button>
+        <button id="steepButton">Steep the Pot</button>
+        <button id="nextTurnButton">Next Turn</button>
+
+        <button id="bankButton">Bank Points</button> -->
+
+  <div id="controlBar">
+
+    <div id="guessBox" class="controlGroup">
+        <div class="box-title">Guess the Next Card</div>
+        <div class="buttonRow">
+            <button id="matchButton" class="guess-btn match-btn">Match</button>
+            <button id="noMatchButton" class="guess-btn nomatch-btn">No Match</button>
+        </div>
+    </div>
+
+    <div id="scoreBox" class="controlGroup">
+        <div class="box-title">Scoring Options</div>
+        <div class="buttonRow">
+            <button id="steepButton" class="action-btn steep-btn">Steep the Pot</button>
+            <button id="bankButton" class="action-btn bank-btn">Bank Points</button>
+        </div>
+    </div>
+
+    <div id="turnBox" class="controlGroup">
+        <div class="box-title">&nbsp;</div> <!-- spacer to align titles -->
+        <div class="buttonRow">
+            <button id="nextTurnButton" class="utility-btn">Next Turn</button>
+        </div>
+    </div>
+
+</div>
+
+        <div id="cardDisplay"></div>
+
+        <!-- PLAY AREA (TABLE LEFT, DECK RIGHT) -->
+        <div id="playArea">
+
+            <!-- TABLE AREA -->
+            <div id="tableArea">
+                <!---<h2>Table</h2>--->
+                <div id="tableCards"></div>
+            </div>
+
+            <!-- DECK STACK (NO BORDER, JUST THE STACK) -->
+            <div id="deckWrapper">
+                <div id="deckStack"></div>
+                <div id="roundIndicator">Round 1 / 2</div>
+            </div>
+        </div>
+
+        <div id="revealAndResult">
+            <!-- REVEAL CARD AREA -->
+            <div id="revealArea">
+                <!---<h2>Revealed Card</h2>--->
+                <div id="revealCard"></div>
+            </div>
+
+            <!--- Results Pop Up-->
+            <div id="resultPopup"></div>
+        </div>
+
+        <div id="tableDisplay"></div>
+        <div id="resultDisplay"></div>
+
+        <div id="roundPopup" class="hidden">
+            <div id="roundPopupContent"></div>
+        </div>
+        <div id="rulebookPopup" class="hidden">
+            <div id="rulebookContent">
+                <button id="closeRulebook" class="closeRulebookBtn">✕</button>
+                <h2>Matcha! Matcha! Rulebook</h2>
+                <div id="rulebookText">
+                    <h2 style="text-align:center; margin-top:0;">Matcha! Matcha! Rulebook</h2>
+
+                    <h3>Overview</h3>
+                    <p>
+                    Matcha! Matcha! is a fast, light, and strategic card‑matching game for 1–6 players.
+                    Predict whether the next card will <strong>Match</strong> or <strong>No Match</strong>,
+                    build points, and decide when to bank them before luck runs out! After two rounds, the
+                    player with the highest score wins.
+                    </p>
+
+                    <h3>The Deck</h3>
+                    <p>The deck contains several types of cards:</p>
+
+                    <ul>
+                        <li><strong>Single‑Suit Number Cards</strong> (1–8 in each suit): <br>
+                            <img src="leaf.svg" class="card-suit-small"> Leaf,
+                            <img src="cup.svg" class="card-suit-small"> Cup,
+                            <img src="whisk.svg" class="card-suit-small"> Whisk,
+                            <img src="teapot.svg" class="card-suit-small"> Teapot,
+                            <img src="blossom.svg" class="card-suit-small"> Blossom
+                        </li>
+
+                        <li><strong>Two‑Suit Cards</strong> — count as BOTH suits when matching.</li>
+
+                        <li><strong>Two‑Number Cards</strong> — count as BOTH numbers when matching.</li>
+
+                        <li><strong>Special Cards</strong> — Last Sip & Free Space (coming soon).</li>
+                    </ul>
+
+                    <h3>Objective</h3>
+                    <p>
+                    Earn the most points by predicting Match or No Match, banking wisely, and managing
+                    your steeped cards. The player with the highest total score after two rounds wins.
+                    </p>
+
+                    <h3>Turn Structure</h3>
+                    <ol>
+                        <li>A starting card is placed on the table.</li>
+                        <li>The player must make their <strong>first guess</strong> (Match or No Match).  
+                            <em>You cannot bank before making your first guess.</em></li>
+                        <li>A new card is drawn and resolved.</li>
+                        <li>After at least one guess, the player may:
+                            <ul>
+                                <li>Keep guessing</li>
+                                <li><strong>Steep the Pot</strong></li>
+                                <li><strong>Bank Points</strong></li>
+                            </ul>
+                        </li>
+                        <li>The turn ends when the player banks, guesses incorrectly, or triggers a Matcha‑Matcha.</li>
+                    </ol>
+
+                    <h3>Matching Rules</h3>
+                    <p>When a card is drawn, compare it to all cards on the table.</p>
+
+                    <ul>
+                        <li><strong>Suit Match</strong>  
+                            (any suit on the drawn card matches any suit on a table card)</li>
+                        <li><strong>Number Match</strong>  
+                            (any number on the drawn card matches any number on a table card)</li>
+                        <li><strong>Matcha!</strong> = Suit <em>or</em> Number matches</li>
+                        <li><strong>Matcha‑Matcha!!</strong> = Suit <em>and</em> Number match  
+                            — <strong>instant loss of pot & end of turn</strong></li>
+                        <li><strong>No Match</strong> = neither matches</li>
+                    </ul>
+
+                    <h3>Guess Outcomes</h3>
+                    <ul>
+                        <li><strong>Correct (Match)</strong> — card is added; player continues.</li>
+                        <li><strong>Correct (No Match)</strong> — card is added; player continues.</li>
+                        <li><strong>Wrong Guess</strong> — pot is lost; turn ends.</li>
+                        <li><strong>Matcha‑Matcha</strong> — pot lost + turn ends immediately.</li>
+                    </ul>
+
+                    <h3>Banking Points</h3>
+                    <p>You may bank only after making your first guess.</p>
+
+                    <p><strong>Banking gives:</strong></p>
+                    <ul>
+                        <li>1 point for every card on the table</li>
+                        <li>+1 point for each hidden steeped card</li>
+                    </ul>
+
+                    <p>
+                    Banking ends the turn and secures your points.  
+                    In Score Token modes, banking also awards a token equal to the points banked (if available).
+                    </p>
+
+                    <h3>Steeping the Pot</h3>
+                    <p>
+                    Steeping lets you save up potential points for later. When you steep:
+                    </p>
+
+                    <ul>
+                        <li>All table cards <em>except the top card</em> go into your hidden pot.</li>
+                        <li>The top card becomes your starting “steeped card” for your next turn.</li>
+                    </ul>
+
+                    <p>
+                    Steeping is a great way to build larger future banks—but risky if the pot is lost later.
+                    </p>
+
+                    <h3>Scoring Modes</h3>
+
+                    <h4>Free Scoring</h4>
+                    <p>Bank any total (after your first guess). No restrictions.</p>
+
+                    <h4>Score Tokens</h4>
+                    <p>
+                    Banking requires collecting a unique token for the banked total (1–8).  
+                    Once a token is taken, it cannot be taken again.
+                    </p>
+
+                    <h4>Trade‑In Tokens</h4>
+                    <p>
+                    Same as Score Tokens, but whenever a player ends their turn with 2+ tokens,
+                    they automatically trade them for a single combined‑value token if available.
+                    </p>
+
+                    <h3>Rounds and Direction</h3>
+                    <p>
+                    Matcha! Matcha! is played over <strong>two rounds</strong>:
+                    </p>
+
+                    <h4>Round 1 — Clockwise</h4>
+                    <p>
+                    Ends when fewer than 5 cards remain at the <em>start</em> of a turn.
+                    </p>
+
+                    <h4>Round 2 — Counterclockwise</h4>
+                    <p>
+                    Deck is reshuffled; direction reverses.  
+                    Ends under the same conditions.
+                    </p>
+
+                    <h3>Winning the Game</h3>
+                    <p>
+                    After two rounds, the player with the <strong>highest total score</strong> wins.  
+                    Ties can be settled by rematch, high‑card draw, or snacks—your choice!
+                    </p>
+
+                    <h3>Enjoy!</h3>
+                    <p>
+                    Steep boldly, match wisely, and may all your rounds be full of flavor.  
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <!---<div id="scoreboard"></div> --->
+
+        <div id="scoreTokenDisplay"></div>
+
+        <!-- PLAYER SCORE PANELS -->
+        <div id="playerPanels"></div>
+
+        <script src="script.js"></script>
+    </body>
+</html>
