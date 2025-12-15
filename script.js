@@ -37,7 +37,7 @@ const deck = [
     //{ type: "special", name: "Free Space"},
     //{ type: "special", name: "Free Space"}
 ];
-// 
+// test 
 let drawPile = [...deck];
 let tableCards = [];
 let canGuess = true;
