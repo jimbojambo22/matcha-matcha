@@ -610,16 +610,31 @@ body {
 /* Compact horizontal control bar */
 #controlBar {
     display: flex;
-    align-items: flex-end;
-    justify-content: space-between;
-    gap: 8px;
-    padding: 4px 6px;
-    margin: 1px 0;
+    justify-content: center;
+    align-items: center;
+
+    gap: clamp(6px, 2vw, 25px);  /* responsive spacing */
+    
+    padding: 6px 8px;
+    margin: 1px auto;
+
     background: #FAF6FB;
     border: 2px solid #E8D7EB;
     border-radius: 12px;
-}
 
+    flex-wrap: nowrap;          /* KEEP groups on one row if possible */
+    max-width: 100%;
+    overflow: hidden;
+}
+.guess-btn,
+.action-btn,
+.utility-btn {
+    white-space: normal;   /* allow wrapping */
+    text-align: center;
+    padding: 6px 10px;     /* smaller padding when wrapping */
+    line-height: 1.2;      /* tighter wrapped text */
+    min-width: 70px;       /* allow much smaller button width */
+}
 /* Each group (guess / scoring / turn) */
 .controlGroup {
     display: flex;
