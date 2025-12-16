@@ -39,32 +39,70 @@
         <button id="bankButton">Bank Points</button> -->
         <!--- test number 2-->
 
-  <div id="controlBar">
+    <div id="controlBar">
 
-    <div id="guessBox" class="controlGroup">
-        <div class="box-title">Guess the Next Card</div>
-        <div class="buttonRow">
-            <button id="matchButton" class="guess-btn match-btn">Match</button>
-            <button id="noMatchButton" class="guess-btn nomatch-btn">No Match</button>
+        <!-- GUESS BOX -->
+        <div id="guessBox" class="controlGroup">
+            <div class="box-title">Guess the Next Card</div>
+            <div class="buttonRow">
+
+                <div class="tooltip">
+                    <button id="matchButton" class="guess-btn match-btn">Match</button>
+                    <div class="tooltip-text">
+                        The drawn card shares a suit OR a number (but NOT both) with ANY card on the table.
+                    </div>
+                </div>
+
+                <div class="tooltip">
+                    <button id="noMatchButton" class="guess-btn nomatch-btn">No Match</button>
+                    <div class="tooltip-text">
+                        The drawn card shares NEITHER suit nor number with any card on the table.
+                    </div>
+                </div>
+
+            </div>
         </div>
-    </div>
 
-    <div id="scoreBox" class="controlGroup">
-        <div class="box-title">Scoring Options</div>
-        <div class="buttonRow">
-            <button id="steepButton" class="action-btn steep-btn">Steep the Pot</button>
-            <button id="bankButton" class="action-btn bank-btn">Bank Points</button>
+
+        <!-- SCORING OPTIONS -->
+        <div id="scoreBox" class="controlGroup">
+            <div class="box-title">Scoring Options</div>
+            <div class="buttonRow">
+
+                <div class="tooltip">
+                    <button id="steepButton" class="action-btn steep-btn">Steep the Pot</button>
+                    <div class="tooltip-text">
+                        Save your table cards until your next turn. Top card will be in play, all other cards are hidden (but still count for points).
+                    </div>
+                </div>
+
+                <div class="tooltip">
+                    <button id="bankButton" class="action-btn bank-btn">Bank Points</button>
+                    <div class="tooltip-text">
+                        Bank points equal to the cards on the table + steeped cards. TOKEN MODE: You may only Bank Points if the appropriate Score Token is available.
+                    </div>
+                </div>
+
+            </div>
         </div>
-    </div>
 
-    <div id="turnBox" class="controlGroup">
-        <div class="box-title">&nbsp;</div> <!-- spacer to align titles -->
-        <div class="buttonRow">
-            <button id="nextTurnButton" class="utility-btn">Next Turn</button>
+
+        <!-- NEXT TURN -->
+        <div id="turnBox" class="controlGroup">
+            <div class="box-title">&nbsp;</div> <!-- spacer -->
+            <div class="buttonRow">
+
+                <div class="tooltip">
+                    <button id="nextTurnButton" class="utility-btn">Next Turn</button>
+                    <div class="tooltip-text">
+                        End your turn without banking. All table cards are lost.
+                    </div>
+                </div>
+
+            </div>
         </div>
-    </div>
 
-</div>
+    </div>
 
         <div id="cardDisplay"></div>
 
