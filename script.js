@@ -34,8 +34,11 @@ const deck = [
 
     //Special Cards
     { type: "special", name: "Last Sip"},
-    //{ type: "special", name: "Free Space"},
-    //{ type: "special", name: "Free Space"}
+    // { type: "special", name: "Free Space"},
+    // { type: "special", name: "Free Space"},
+    // { type: "special", name: "Free Space"},
+    { type: "special", name: "Free Space"},
+    { type: "special", name: "Free Space"}
 ];
 // test 
 //test 
@@ -60,6 +63,8 @@ let turnDirection = 1; //1 is clockwise, -1 is counter
 
 let hasGuessedThisTurn = false;
 
+let pendingFreeSpaceCard = null;
+
 const matchButton = document.getElementById("matchButton");
 const noMatchButton = document.getElementById("noMatchButton");
 const display = document.getElementById("cardDisplay");
@@ -78,6 +83,7 @@ const steepButton = document.getElementById("steepButton");
 // Helpers for two-suit / two-number cards
 // -------------------------------
 function getCardSuits(card) {
+    if (card.isCovered) return [];
     if (card.type === "special") return[]; //no suit
     const suits = [];
     if (typeof card.suit === "string") suits.push(card.suit);
@@ -86,6 +92,7 @@ function getCardSuits(card) {
 }
 
 function getCardNumbers(card) {
+    if (card.isCovered) return [];
     if (card.type === "special") return []; //no numbers
     const nums = [];
     if (typeof card.number === "number") nums.push(card.number);
@@ -137,7 +144,21 @@ function createCardElement(card) {
     // -----------------------------
     if (card.type === "special") {
         div.classList.add("specialCard");
-        div.textContent = card.name;
+        
+        // Add specific classes for styling based on the name
+        if (card.name === "Last Sip") {
+            div.classList.add("card-last-sip");
+            // Break text onto two lines visually if needed
+            div.innerHTML = "Last<br>Sip"; 
+        } 
+        else if (card.name === "Free Space") {
+            div.classList.add("card-free-space");
+            div.innerHTML = "Free<br>Space";
+        } 
+        else {
+            div.textContent = card.name;
+        }
+        
         return div;
     }
 
@@ -206,6 +227,109 @@ function createCardElement(card) {
     return div;
 }
 
+// -------------------------------
+// FREE SPACE LOGIC
+// -------------------------------
+function initiateFreeSpaceChoice(card) {
+    pendingFreeSpaceCard = card;
+
+    // 1. Show Instructions
+    showResult("Free Space! Click a Table Card to COVER it, or the Empty Slot.", true);
+
+    const tableDiv = document.getElementById("tableCards");
+    const cardDivs = tableDiv.children;
+
+    // 2. Make Existing Table Cards Interactive
+    for (let i = 0; i < cardDivs.length; i++) {
+        cardDivs[i].classList.add("selectable");
+        
+        // Add temporary click listener
+        cardDivs[i].onclick = function() {
+            resolveFreeSpace(i); // Pass the index of the card to cover
+        };
+    }
+
+    // 3. Create the GHOST CARD (The "Play Normally" Option)
+    const ghost = document.createElement("div");
+    ghost.classList.add("card", "ghost-slot");
+    ghost.innerHTML = "Play<br>Here"; // Text inside the dashed box
+    
+    // Clicking this triggers the "Play Normally" logic (-1)
+    ghost.onclick = function() {
+        resolveFreeSpace(-1); 
+    };
+    
+    // Append it to the END of the table
+    tableDiv.appendChild(ghost);
+}
+
+function resolveFreeSpace(targetIndex) {
+    const tableDiv = document.getElementById("tableCards");
+    const revealArea = document.getElementById("revealCard");
+    const cardDivs = tableDiv.children;
+
+    // 1. CLEANUP: Remove listeners from real cards
+    // Note: We loop through children, but we skip the last one if it's the ghost card
+    for (let i = 0; i < cardDivs.length; i++) {
+        cardDivs[i].classList.remove("selectable");
+        cardDivs[i].onclick = null; 
+    }
+
+    // REMOVE THE GHOST CARD
+    // We look for the specific class we added
+    const ghost = tableDiv.querySelector(".ghost-slot");
+    if (ghost) {
+        ghost.remove();
+    }
+
+    // Remove the old button just in case it exists (legacy code safety)
+    const btn = document.getElementById("playNormallyBtn");
+    if (btn) btn.remove();
+
+    // Hide the instruction popup
+    document.getElementById("resultPopup").classList.remove("show");
+
+    // 2. LOGIC: Handle Placement
+    if (targetIndex === -1) {
+        // OPTION A: Play Normally (Ghost Slot)
+        tableCards.push(pendingFreeSpaceCard);
+        moveRevealedToTable(); 
+    } 
+    else {
+        // OPTION B: Cover a Card
+        
+        // Logic: Mark the old card as covered
+        tableCards[targetIndex].isCovered = true;
+        
+        // Logic: Add Free Space to array
+        tableCards.push(pendingFreeSpaceCard);
+
+        // Visual: Replace the specific card
+        const targetDiv = cardDivs[targetIndex];
+        
+        const newCardElem = createCardElement(pendingFreeSpaceCard);
+        newCardElem.classList.add("stacked"); 
+        
+        tableDiv.replaceChild(newCardElem, targetDiv);
+
+        // Clear the reveal area manually
+        revealArea.innerHTML = "";
+    }
+
+    // 3. RESUME GAME
+    pendingFreeSpaceCard = null;
+    enableGuessing(); 
+    
+    updateDeckVisual();
+}
+
+function resetDeckProperties() {
+    // Loop through the original master deck and clean every card
+    deck.forEach(card => {
+        card.isCovered = false;
+        // If we added any other temporary properties, clear them here too
+    });
+}
 
 // -------------------------------
 // Scoreboard
@@ -387,6 +511,7 @@ function moveRevealedToTable() {
 // New Game
 // -------------------------------
 function startNewGame() {
+    resetDeckProperties();
     hasGuessedThisTurn = false;
     numPlayers = parseInt(playerCountSelect.value);
     playerScores = new Array(numPlayers).fill(0);
@@ -600,6 +725,16 @@ function drawCard(playerGuess) {
         
         return;
     }
+    //FREE SPACE
+    if (drawnCard.type === "special" && drawnCard.name === "Free Space") {
+        // Pause the game flow
+        disableGuessing();
+        
+        // Trigger the selection UI
+        initiateFreeSpaceChoice(drawnCard);
+        
+        return; // Stop drawCard here
+    }
 
     hasGuessedThisTurn = true;
 
@@ -771,6 +906,7 @@ function startNextRound() {
     if (currentRound === 1) {
         currentRound = 2;
         turnDirection = -1; // Reverse direction
+        resetDeckProperties();
         drawPile = [...deck];
         tableCards = [];
         
@@ -784,7 +920,7 @@ function startNextRound() {
         
         // Force update the Player Display immediately so we know who starts Round 2
         playerDisplay.textContent = "Current Player: " + (currentPlayer + 1);
-        
+        updateScoreboard();
         showRoundPopup("End of Round 1! Direction Reversing...");
 
         // WAIT 2.5 seconds for the popup to finish, THEN deal the new card

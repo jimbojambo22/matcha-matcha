@@ -878,3 +878,170 @@ select:focus {
     opacity: 1;
     transition-delay: 1s;
 }
+
+/* ============================
+   FREE SPACE / SELECTION MODE
+   ============================ */
+
+/* When selecting a card to cover, make them look interactive */
+.card.selectable {
+    cursor: pointer;
+    box-shadow: 0 0 8px #3A8DDE; /* Highlight Blue */
+    animation: pulseSelect 1.5s infinite;
+}
+.card.selectable:hover {
+    transform: scale(1.05);
+    border-color: #3A8DDE;
+}
+
+@keyframes pulseSelect {
+    0% { box-shadow: 0 0 5px #3A8DDE; }
+    50% { box-shadow: 0 0 15px #3A8DDE; }
+    100% { box-shadow: 0 0 5px #3A8DDE; }
+}
+
+/* Visual style for a card that has been covered (The Stack) */
+.card.stacked {
+    /* We add a visual cue that there are 2 cards here */
+    box-shadow: 4px 4px 0px rgba(0,0,0,0.2), 8px 8px 10px rgba(0,0,0,0.25);
+    transform: translate(-2px, -2px);
+    overflow: visible;
+}
+
+/* A badge to show points count on stacked cards */
+.card.stacked::before {
+    content: "+1"; /* Indicates the card underneath */
+    position: absolute;
+    top: -8px;
+    right: -8px;
+    background: #FFD54F; /* Bank Gold */
+    color: #5A4500;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    font-size: 14px;
+    font-weight: bold;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    border: 2px solid #fff;
+    z-index: 10;
+    box-shadow: 1px 1px 3px rgba(0,0,0,0.3);
+}
+
+/* The button to play normally */
+#playNormallyBtn {
+    margin-top: 10px;
+    background: #E35A9B;
+    color: white;
+    border: 2px solid #C04580;
+    padding: 8px 16px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-family: "Baloo 2", sans-serif;
+    font-weight: bold;
+    font-size: 16px;
+    animation: popIn 0.3s ease;
+}
+@keyframes popIn {
+    from { transform: scale(0); opacity: 0; }
+    to { transform: scale(1); opacity: 1; }
+}
+
+/* ============================
+   SPECIAL CARD VISUALS
+   ============================ */
+
+.specialCard {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    font-family: "Baloo 2", sans-serif;
+    font-weight: 800; /* Extra Bold */
+    font-size: 24px;
+    line-height: 1.1; /* Tighter spacing for 2 lines */
+    text-transform: uppercase;
+    box-shadow: 2px 3px 6px rgba(0,0,0,0.15);
+}
+
+/* --- LAST SIP (Green Theme) --- */
+.card-last-sip {
+    /* Very light green background */
+    background: #F1F8E9; 
+    
+    /* Matcha Green Border */
+    border: 3px solid #5FAF3C;
+    
+    /* Text Color */
+    color: #5FAF3C;
+    
+    /* Crisp text shadow */
+    text-shadow: 1px 1px 0px #FFFFFF;
+}
+
+/* --- FREE SPACE (Pink Theme) --- */
+.card-free-space {
+    /* Very light pink background */
+    background: #FFF0F5;
+    
+    /* Blossom Pink Border */
+    border: 3px solid #E35A9B;
+    
+    /* Text Color */
+    color: #E35A9B;
+    
+    /* Crisp text shadow */
+    text-shadow: 1px 1px 0px #FFFFFF;
+}
+
+/* Ensure the stacked badge still looks good on Free Space */
+.card-free-space.stacked {
+    border-color: #E35A9B; 
+}
+
+/* ============================
+   GHOST SLOT (Free Space Option)
+   ============================ */
+
+.card.ghost-slot {
+    /* Dashed border implies "Place Here" */
+    border: 3px dashed #E35A9B; 
+    
+    /* Light translucent background */
+    background: rgba(255, 240, 245, 0.5); 
+    
+    color: #E35A9B;
+    font-family: "Baloo 2", sans-serif;
+    font-weight: 800;
+    font-size: 20px;
+    line-height: 1.1;
+    
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    
+    cursor: pointer;
+    opacity: 0.6;
+    transition: all 0.2s ease;
+}
+
+.card.ghost-slot:hover {
+    opacity: 1;
+    transform: scale(1.05);
+    background: #FFF0F5; /* Solid background on hover */
+    box-shadow: 0 0 10px #E35A9B;
+}
+
+/* ============================
+   MINI SPECIAL CARDS (Scoreboard)
+   ============================ */
+
+/* When a special card is steeped (mini), shrink the text */
+.card.mini.specialCard {
+    font-size: 9px;        /* Drastically smaller font */
+    line-height: 1.1;      /* Tight line height */
+    border-width: 2px;     /* Thinner border to match other mini cards */
+    padding: 2px;          /* Ensure text doesn't hit edges */
+}
