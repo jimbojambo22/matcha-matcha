@@ -33,7 +33,7 @@ const deck = [
     { suit: 7, number: 8 },
 
     //Special Cards
-    //{ type: "special", name: "Last Sip"},
+    { type: "special", name: "Last Sip"},
     //{ type: "special", name: "Free Space"},
     //{ type: "special", name: "Free Space"}
 ];
@@ -110,6 +110,7 @@ function enableGuessing() {
     noMatchButton.disabled = false;
     bankButton.disabled = false;
     steepButton.disabled = false;
+    nextTurnButton.disabled = false;
 }
 
 function updateRoundIndicator() {
@@ -430,32 +431,70 @@ function startNewGame() {
 // -------------------------------
 // Deal first card
 // -------------------------------
+// function dealFirstCard() {
+//     hasGuessedThisTurn = false;
+//     if (drawPile.length === 0) drawPile = [...deck];
+
+//     let index = Math.floor(Math.random() * drawPile.length);
+//     let firstCard = drawPile[index];
+//     drawPile.splice(index, 1);
+
+//     tableCards = [firstCard];
+
+//     //tableDisplay.textContent = firstCard.suit + " " + firstCard.number;          // old display
+//     //display.textContent = firstCard.suit + " " + firstCard.number;
+//     // New reveal card area
+//     /*document.getElementById("revealCard").innerHTML =                         // don't show first card in Reveal Card spot
+//     `<div class="card">${firstCard.suit} ${firstCard.number}</div>`;*/
+
+//     // New table area
+//     //document.getElementById("tableCards").innerHTML =
+//     //`<div class="card">${firstCard.suit} ${firstCard.number}</div>`;
+//     const table = document.getElementById("tableCards");
+//     table.innerHTML = "";
+
+//     const cardElem = createCardElement(firstCard);
+//     table.appendChild(cardElem);
+
+//     updateDeckVisual();
+// }
+
 function dealFirstCard() {
+    enableGuessing();
     hasGuessedThisTurn = false;
+    
+    // Reshuffle if empty
     if (drawPile.length === 0) drawPile = [...deck];
 
     let index = Math.floor(Math.random() * drawPile.length);
     let firstCard = drawPile[index];
     drawPile.splice(index, 1);
 
+    // 1. Add to Logic
     tableCards = [firstCard];
 
-    //tableDisplay.textContent = firstCard.suit + " " + firstCard.number;          // old display
-    //display.textContent = firstCard.suit + " " + firstCard.number;
-    // New reveal card area
-    /*document.getElementById("revealCard").innerHTML =                         // don't show first card in Reveal Card spot
-    `<div class="card">${firstCard.suit} ${firstCard.number}</div>`;*/
-
-    // New table area
-    //document.getElementById("tableCards").innerHTML =
-    //`<div class="card">${firstCard.suit} ${firstCard.number}</div>`;
+    // 2. Add to Visuals
     const table = document.getElementById("tableCards");
     table.innerHTML = "";
-
     const cardElem = createCardElement(firstCard);
     table.appendChild(cardElem);
 
     updateDeckVisual();
+
+    // ---------------------------------------------------------
+    // LAST SIP CHECK
+    // ---------------------------------------------------------
+    if (firstCard.type === "special" && firstCard.name === "Last Sip") {
+        
+        // Pass 'true' here as well
+        showResult("Last Sip on the deal! Click BANK to collect points.", true);
+        
+        disableGuessing();
+        forcedBank = true;
+        bankButton.disabled = false;
+
+        return; 
+    }
 }
 
 //---------------
@@ -481,14 +520,32 @@ function updateScoreTokenDisplay() {
 //---------------------
 //Show Results in popup
 //------------------------
-function showResult(msg) {
+// function showResult(msg) {
+//     const box = document.getElementById("resultPopup");
+//     box.textContent = msg;
+//     box.classList.add("show");
+
+//     setTimeout(() => {                              //hide after 2 seconds
+//         box.classList.remove('show');
+//     }, 2000);
+// };
+//---------------------
+// Show Results in popup
+//------------------------
+function showResult(msg, persist = false) {
     const box = document.getElementById("resultPopup");
     box.textContent = msg;
     box.classList.add("show");
 
-    setTimeout(() => {                              //hide after 2 seconds
-        box.classList.remove('show');
-    }, 2000);
+    // Clear any existing timer to prevent conflicts
+    if (box.timeoutId) clearTimeout(box.timeoutId);
+
+    if (!persist) {
+        // Only hide automatically if persist is FALSE
+        box.timeoutId = setTimeout(() => {
+            box.classList.remove('show');
+        }, 2000);
+    }
 };
 
 //card reveal animation
@@ -526,22 +583,21 @@ function drawCard(playerGuess) {
 
     showRevealedCard(drawnCard);
 
-    if (drawnCard.type === "special" && drawnCard.name ==="Last Sip") {
-        showResult("Last Sip! Your turn is over.");
-
+    //LAST SIP
+    if (drawnCard.type === "special" && drawnCard.name === "Last Sip") {
+        // Pass 'true' so the message stays until they click Bank
+        showResult("Last Sip! Turn Over. Click BANK to collect points.", true);
+        
         tableCards.push(drawnCard);
-
+        
         setTimeout(() => {
             moveRevealedToTable();
         }, 100);
 
         disableGuessing();
-
-        setTimeout(() => {                              //simulates pressing Bank button
-            forcedBank = true;
-            bankButton.click();
-        }, 700);
-
+        forcedBank = true;
+        bankButton.disabled = false;
+        
         return;
     }
 
@@ -685,27 +741,63 @@ function checkRoundEnd() {
 //-------------------
 //Start next round
 //-----------------
+// function startNextRound() {
+//     if (currentRound === 1) {
+//         currentRound = 2;
+//         turnDirection = -1;
+//         drawPile = [...deck];
+//         tableCards = [];
+//         document.getElementById("tableCards").innerHTML = "";
+//         document.getElementById("revealCard").innerHTML = "";
+
+//         updateRoundIndicator();
+//         updateDeckVisual();
+        
+//         showRoundPopup("Round 2 Begins! Direction reverses")
+
+//         //nextTurnButton.click();
+
+//         dealFirstCard();
+//     } else {
+//         showRoundPopup("GAME OVER! Reshuffle and play again! MATCHA MATCHA FOREVERRRRRR!!!!");
+//         disableGuessing();
+//         nextTurnButton.disabled = true;
+//     }
+// }
+
 function startNextRound() {
+    disableGuessing(); // Lock the game immediately
+
     if (currentRound === 1) {
         currentRound = 2;
-        turnDirection = -1;
+        turnDirection = -1; // Reverse direction
         drawPile = [...deck];
         tableCards = [];
+        
+        // Clear visuals immediately
         document.getElementById("tableCards").innerHTML = "";
         document.getElementById("revealCard").innerHTML = "";
+        resultDisplay.textContent = "";
 
         updateRoundIndicator();
         updateDeckVisual();
         
-        showRoundPopup("Round 2 Begins! Direction reverses")
+        // Force update the Player Display immediately so we know who starts Round 2
+        playerDisplay.textContent = "Current Player: " + (currentPlayer + 1);
+        
+        showRoundPopup("End of Round 1! Direction Reversing...");
 
-        //nextTurnButton.click();
+        // WAIT 2.5 seconds for the popup to finish, THEN deal the new card
+        setTimeout(() => {
+            showRoundPopup("Round 2 Start! Player " + (currentPlayer + 1) + "'s Turn.");
+            dealFirstCard(); // This will re-enable guessing automatically
+        }, 2500);
 
-        dealFirstCard();
     } else {
         showRoundPopup("GAME OVER! Reshuffle and play again! MATCHA MATCHA FOREVERRRRRR!!!!");
         disableGuessing();
         nextTurnButton.disabled = true;
+        bankButton.disabled = true;
     }
 }
 
@@ -965,8 +1057,111 @@ function animatePlayerTokensOut(playerIndex, tokenValues, callback) {
 //     dealFirstCard();
 // });
 
+// bankButton.addEventListener("click", function () {
+//     if (!canGuess) return;
+
+//     // Normal players must have made at least one guess
+//     if (!hasGuessedThisTurn && !forcedBank) {
+//         showResult("You must make your first guess before banking!");
+//         return;
+//     }
+
+//     let pot = playerStacks[currentPlayer];
+//     let points = tableCards.length + pot.hidden.length;
+
+//     // =============================
+//     // SCORING MODE: TOKENS / TRADE
+//     // =============================
+//     if (scoringMode === "tokens" || scoringMode === "trade") {
+
+//         // Token must exist
+//         if (!availableScoreTokens.includes(points)) {
+//             showResult(points + "-point token is not available");
+//             return;
+//         }
+
+//         const tokenRecipient = currentPlayer; // capture BEFORE turn changes
+
+//         // Remove token from the pool immediately
+//         availableScoreTokens = availableScoreTokens.filter(x => x !== points);
+
+//         // Start flying animation
+//         animateTokenToPlayer(points, tokenRecipient);
+
+//         // Delay real token assignment until animation completes
+//         setTimeout(() => {
+
+//             playerTokens[tokenRecipient].push(points);
+
+//             // Check for trade-in (may trigger another animation)
+//             handleTradeIn(tokenRecipient);
+
+//             updateScoreTokenDisplay();
+//             updateScoreboard();
+
+//         }, 650);
+//     }
+
+//     // Allow banking without guessing ONLY if forced by Last Sip
+//     forcedBank = false;
+
+//     // =============================
+//     // ADD POINTS FOR THE TURN
+//     // =============================
+//     playerScores[currentPlayer] += points;
+
+//     // =============================
+//     // CLEAR TABLE (AFTER scoring)
+//     // =============================
+//     tableCards = [];
+//     document.getElementById("tableCards").innerHTML = "";
+//     document.getElementById("revealCard").innerHTML = "";
+
+//     updateDeckVisual();
+//     updateScoreTokenDisplay();
+
+//     // =============================
+//     // ADVANCE TURN
+//     // =============================
+//     currentPlayer = (currentPlayer + turnDirection + numPlayers) % numPlayers;
+//     hasGuessedThisTurn = false;
+
+//     // =============================
+//     // CHECK FOR ROUND END
+//     // =============================
+//     if (checkRoundEnd()) {
+//         startNextRound();
+//         return;
+//     }
+
+//     updateScoreboard();
+
+//     // =============================
+//     // START STEEPED TURN IF NEEDED
+//     // =============================
+//     if (isSteepStart[currentPlayer] && playerStacks[currentPlayer].top) {
+//         startSteepedTurn();
+//         isSteepStart[currentPlayer] = false;
+//         return;
+//     }
+
+//     // =============================
+//     // START NORMAL TURN
+//     // =============================
+//     dealFirstCard();
+// });
+
+// -------------------------------
+// Bank Points (Modified for Last Sip Fix)
+// -------------------------------
 bankButton.addEventListener("click", function () {
-    if (!canGuess) return;
+    // 1. Hide the persistent popup immediately
+    document.getElementById("resultPopup").classList.remove("show");
+
+    if (!canGuess && !forcedBank) return;
+    
+    // MODIFICATION 1: Allow execution if it is a Forced Bank (Last Sip), even if guessing is disabled
+    if (!canGuess && !forcedBank) return;
 
     // Normal players must have made at least one guess
     if (!hasGuessedThisTurn && !forcedBank) {
@@ -976,47 +1171,65 @@ bankButton.addEventListener("click", function () {
 
     let pot = playerStacks[currentPlayer];
     let points = tableCards.length + pot.hidden.length;
+    let pointsAwarded = 0; // Track actual points given
 
     // =============================
     // SCORING MODE: TOKENS / TRADE
     // =============================
     if (scoringMode === "tokens" || scoringMode === "trade") {
 
-        // Token must exist
+        // Check availability
         if (!availableScoreTokens.includes(points)) {
-            showResult(points + "-point token is not available");
-            return;
+            
+            // MODIFICATION 2: Handle Last Sip (Forced Bank) when token is missing
+            if (forcedBank) {
+                showResult("Last Sip! " + points + "-point token missing. 0 Points.");
+                pointsAwarded = 0; 
+                // We do NOT return here. We let the code fall through to clean up the table and change turns.
+            } 
+            else {
+                // Normal Manual Bank: Player gets a warning and can keep playing
+                showResult(points + "-point token is not available");
+                return;
+            }
+        } 
+        else {
+            // Token IS available
+            pointsAwarded = points; // Set points to add to scoreboard later
+
+            const tokenRecipient = currentPlayer; 
+
+            // Remove token from the pool immediately
+            availableScoreTokens = availableScoreTokens.filter(x => x !== points);
+
+            // Start flying animation
+            animateTokenToPlayer(points, tokenRecipient);
+
+            // Delay real token assignment until animation completes
+            setTimeout(() => {
+                playerTokens[tokenRecipient].push(points);
+                handleTradeIn(tokenRecipient);
+                updateScoreTokenDisplay();
+                updateScoreboard();
+            }, 650);
         }
-
-        const tokenRecipient = currentPlayer; // capture BEFORE turn changes
-
-        // Remove token from the pool immediately
-        availableScoreTokens = availableScoreTokens.filter(x => x !== points);
-
-        // Start flying animation
-        animateTokenToPlayer(points, tokenRecipient);
-
-        // Delay real token assignment until animation completes
-        setTimeout(() => {
-
-            playerTokens[tokenRecipient].push(points);
-
-            // Check for trade-in (may trigger another animation)
-            handleTradeIn(tokenRecipient);
-
-            updateScoreTokenDisplay();
-            updateScoreboard();
-
-        }, 650);
+    } 
+    // =============================
+    // SCORING MODE: FREE
+    // =============================
+    else {
+        // In free mode, they always get the points
+        pointsAwarded = points;
     }
 
-    // Allow banking without guessing ONLY if forced by Last Sip
+    // Reset forcedBank flag
     forcedBank = false;
 
     // =============================
     // ADD POINTS FOR THE TURN
     // =============================
-    playerScores[currentPlayer] += points;
+    // Only add if we actually awarded points (handles the missing token case)
+    playerScores[currentPlayer] += pointsAwarded;
 
     // =============================
     // CLEAR TABLE (AFTER scoring)
@@ -1067,9 +1280,7 @@ nextTurnButton.addEventListener("click", function () {
     tableCards = [];
     document.getElementById("tableCards").innerHTML = "";
     document.getElementById("revealCard").innerHTML = "";
-    document.getElementById("revealCard").innerHTML = "";
     enableGuessing();
-
     updateDeckVisual();
 
     //trade-in mode check
