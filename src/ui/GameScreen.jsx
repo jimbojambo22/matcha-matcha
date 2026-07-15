@@ -131,10 +131,6 @@ export default function GameScreen({ config, resume, onExit, onPlayAgain }) {
           Menu
         </button>
         <div className="round-chip">Round {state.round} / 2</div>
-        <div className="deck-chip" aria-label={`${state.drawPile.length} cards left in the deck`}>
-          <img src={cardback} alt="" className="deck-back" />
-          <span>{state.drawPile.length}</span>
-        </div>
         <button className="chip-btn" onClick={() => setRulesOpen(true)}>
           Rules
         </button>
@@ -164,7 +160,28 @@ export default function GameScreen({ config, resume, onExit, onPlayAgain }) {
           </div>
         )}
         <div className="table-cards">
-          {state.stacks.map((stack, i) => {
+          <div className="table-first-col">
+            {state.stacks.length > 0 &&
+              (() => {
+                const stack = state.stacks[0];
+                const top = stack[stack.length - 1];
+                return (
+                  <CardView
+                    key={`0-${top.id}`}
+                    card={top}
+                    covered={stack.length - 1}
+                    selectable={placing}
+                    onClick={placing ? () => onPlace(0) : undefined}
+                  />
+                );
+              })()}
+            <div className="deck-card" aria-label={`${state.drawPile.length} cards left in the deck`}>
+              <img src={cardback} alt="" className="deck-card-img" />
+              <span className="deck-count">{state.drawPile.length}</span>
+            </div>
+          </div>
+          {state.stacks.slice(1).map((stack, idx) => {
+            const i = idx + 1;
             const top = stack[stack.length - 1];
             return (
               <CardView
@@ -183,7 +200,6 @@ export default function GameScreen({ config, resume, onExit, onPlayAgain }) {
               Here
             </button>
           )}
-          {state.stacks.length === 0 && !placing && <div className="table-empty">Table</div>}
         </div>
 
         {reveal && (

@@ -271,22 +271,6 @@ button:disabled {
   font-size: 0.95rem;
 }
 
-.deck-chip {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-weight: 800;
-  color: var(--ink);
-}
-
-.deck-back {
-  width: 22px;
-  height: 30px;
-  border-radius: 3px;
-  object-fit: cover;
-  box-shadow: 1px 1px 0 #fff, 2px 2px 0 rgba(0, 0, 0, 0.15);
-}
-
 /* ============ Tokens ============ */
 
 .token-pool {
@@ -380,13 +364,41 @@ button:disabled {
   align-items: flex-start;
 }
 
-.table-empty {
-  color: #d9c3d0;
-  font-weight: 700;
-  font-size: 1.2rem;
+.table-first-col {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  align-items: flex-start;
+}
+
+.deck-card {
+  position: relative;
+  width: var(--card-w);
+  height: var(--card-h);
+  border-radius: 12px;
+  overflow: hidden;
+  flex-shrink: 0;
+  box-shadow: 2px 3px 8px rgba(0, 0, 0, 0.22);
+}
+
+.deck-card-img {
   width: 100%;
-  text-align: center;
-  padding-top: calc(var(--card-h) / 3);
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.deck-count {
+  position: absolute;
+  bottom: 6px;
+  right: 6px;
+  background: rgba(0, 0, 0, 0.65);
+  color: #fff;
+  font-weight: 800;
+  font-size: 0.85rem;
+  padding: 2px 8px;
+  border-radius: 999px;
+  line-height: 1.2;
 }
 
 .reveal-overlay {
