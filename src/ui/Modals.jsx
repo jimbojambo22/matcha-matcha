@@ -1,7 +1,11 @@
+import { useState } from 'react';
 import { peekNextTurn } from '../game/engine.js';
 import CardView from './CardView.jsx';
+import { BUST_TITLES, pickFresh } from './messages.js';
 
-export function TurnOverModal({ state, onAdvance }) {
+export function TurnOverModal({ state, names, onAdvance }) {
+  // Picked once per turn-over so it doesn't change on re-render.
+  const [bustTitle] = useState(() => pickFresh(BUST_TITLES));
   const o = state.outcome;
   const peek = peekNextTurn(state);
   const solo = state.numPlayers === 1;
@@ -41,7 +45,7 @@ export function TurnOverModal({ state, onAdvance }) {
     );
   } else if (o?.kind === 'bust') {
     tone = 'bad';
-    title = o.reason === 'matcha' ? 'MATCHA-MATCHA!!' : 'Wrong guess!';
+    title = o.reason === 'matcha' ? 'MATCHA-MATCHA!!' : bustTitle;
     const lost = o.lostTable + o.lostPot;
     body = (
       <p>
@@ -65,8 +69,8 @@ export function TurnOverModal({ state, onAdvance }) {
   }
 
   let cta = 'Next turn';
-  if (peek?.kind === 'turn' && !solo) cta = `Pass to Player ${peek.player + 1}`;
-  else if (peek?.kind === 'roundTwo') cta = solo ? 'Start round 2' : `Round 2 — Player ${peek.player + 1} starts`;
+  if (peek?.kind === 'turn' && !solo) cta = `Pass to ${names[peek.player]}`;
+  else if (peek?.kind === 'roundTwo') cta = solo ? 'Start round 2' : `Round 2 — ${names[peek.player]} starts`;
   else if (peek?.kind === 'gameOver') cta = 'See final results';
 
   return (
@@ -82,7 +86,7 @@ export function TurnOverModal({ state, onAdvance }) {
   );
 }
 
-export function GameOverModal({ state, onPlayAgain, onHome }) {
+export function GameOverModal({ state, names, onPlayAgain, onHome }) {
   const r = state.results;
   const solo = state.numPlayers === 1;
   const standings = state.players
@@ -98,10 +102,10 @@ export function GameOverModal({ state, onPlayAgain, onHome }) {
             Final score: <strong>{state.players[0].score}</strong>
           </p>
         ) : r.winner !== null ? (
-          <p className="winner-line">🏆 Player {r.winner + 1} wins with {r.maxScore} points!</p>
+          <p className="winner-line">🏆 {names[r.winner]} wins with {r.maxScore} points!</p>
         ) : (
           <p className="winner-line">
-            A tie! Players {r.tiedPlayers.map((i) => i + 1).join(' & ')} share the win — matcha for everyone 🍵
+            A tie! {r.tiedPlayers.map((i) => names[i]).join(' & ')} share the win — matcha for everyone 🍵
           </p>
         )}
         {!solo && r.tiebreakUsed && <p className="tiebreak-note">Tie broken by the biggest single banked turn.</p>}
@@ -110,7 +114,7 @@ export function GameOverModal({ state, onPlayAgain, onHome }) {
             <tbody>
               {standings.map((p) => (
                 <tr key={p.index} className={r.winner === p.index ? 'winner' : ''}>
-                  <td>Player {p.index + 1}</td>
+                  <td>{names[p.index]}</td>
                   <td className="score-cell">{p.score}</td>
                   <td className="dim">best turn: {p.biggestBank}</td>
                 </tr>

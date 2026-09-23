@@ -10,11 +10,52 @@ import CardView from './CardView.jsx';
 import { TurnOverModal, GameOverModal } from './Modals.jsx';
 import RulebookModal from './RulebookModal.jsx';
 import { saveGame, clearSave } from '../persist.js';
+import { appendGame, newGameId } from '../history.js';
 import cardback from '../assets/cardback.svg';
+import { resolveNames } from '../names.js';
+import { describeGuess } from './messages.js';
+import Explanation from './Explanation.jsx';
 
 export default function GameScreen({ config, resume, onExit, onPlayAgain }) {
-  const [snap, setSnap] = useState(() => (resume ? { state: resume, events: [] } : createGame(config)));
-  const [reveal, setReveal] = useState(null); // { card, verdict, message }
+  // One lazy boot so the engine is created exactly once, and the recording
+  // metadata is captured alongside it (initialState must be the *exact*
+  // object createGame returned — the deck order in it is the whole game).
+  const [boot] = useState(() => {
+    if (resume) {
+      return {
+        snap: { state: resume.state, events: [] },
+        meta: {
+          gameId: resume.gameId,
+          startedAt: resume.startedAt,
+          initialState: resume.initialState,
+          actions: [...resume.actions],
+          seatProfiles: resume.seatProfiles ?? [],
+          playerNames: resolveNames(resume.playerNames, resume.state.numPlayers),
+        },
+      };
+    }
+    const created = createGame(config);
+    return {
+      snap: created,
+      meta: {
+        gameId: newGameId(),
+        startedAt: Date.now(),
+        initialState: created.state,
+        actions: [],
+        // Seat -> profile id, chosen at setup. A null seat is a guest, whose
+        // play is recorded but belongs to nobody's profile.
+        seatProfiles:
+          config.seatProfiles ?? Array.from({ length: config.numPlayers ?? 1 }, () => null),
+        // Seat -> display name, chosen on the names step ("Player N" if blank).
+        playerNames: resolveNames(config.playerNames, created.state.numPlayers),
+      },
+    };
+  });
+
+  const [snap, setSnap] = useState(boot.snap);
+  const meta = useRef(boot.meta);
+  const archived = useRef(false);
+  const [reveal, setReveal] = useState(null); // { card, verdict, message, detail }
   const [busy, setBusy] = useState(false);
   const [toast, setToast] = useState(null);
   const [banner, setBanner] = useState(null);
@@ -22,6 +63,7 @@ export default function GameScreen({ config, resume, onExit, onPlayAgain }) {
   const timers = useRef([]);
 
   const state = snap.state;
+  const names = meta.current.playerNames;
   const legal = getLegalActions(state);
   const isTokenMode = state.scoringMode !== 'free';
   const placing = state.phase === 'placingFreeSpace';
@@ -32,16 +74,30 @@ export default function GameScreen({ config, resume, onExit, onPlayAgain }) {
     [],
   );
 
-  // Persist after every committed state so a closed tab can resume.
+  // Persist after every committed state so a closed tab can resume, and
+  // archive the finished game instead of dropping it on the floor.
   useEffect(() => {
-    if (state.phase === 'gameOver') clearSave();
-    else saveGame(state);
+    if (state.phase === 'gameOver') {
+      if (!archived.current) {
+        archived.current = true;
+        appendGame({ ...meta.current, endedAt: Date.now() });
+      }
+      clearSave();
+    } else {
+      saveGame({ ...meta.current, state });
+    }
   }, [state]);
 
   useEffect(() => () => timers.current.forEach(clearTimeout), []);
 
   function later(fn, ms) {
     timers.current.push(setTimeout(fn, ms));
+  }
+
+  /** Commit an applied action: log it, then swap in the new snapshot. */
+  function commit(action, next) {
+    meta.current.actions.push(action);
+    setSnap(next);
   }
 
   function flash(msg) {
@@ -56,33 +112,28 @@ export default function GameScreen({ config, resume, onExit, onPlayAgain }) {
 
   function onGuess(g) {
     if (busy || !legal.guess) return;
-    const next = applyAction(state, { type: 'GUESS', guess: g });
+    const action = { type: 'GUESS', guess: g };
+    const next = applyAction(state, action);
     const drawn = next.events.find((e) => e.type === 'CARD_DRAWN');
     const resolved = next.events.find((e) => e.type === 'GUESS_RESOLVED');
     let verdict;
     let message;
+    let detail = null;
     if (next.events.some((e) => e.type === 'LAST_SIP')) {
       verdict = 'lastsip';
       message = 'Last Sip!';
     } else if (next.events.some((e) => e.type === 'FREE_SPACE_DRAWN')) {
       verdict = 'freespace';
       message = 'Free Space!';
-    } else if (resolved.actual === 'matcha') {
-      verdict = 'matcha';
-      message = 'MATCHA-MATCHA!!';
-    } else if (resolved.correct) {
-      verdict = 'correct';
-      message = resolved.actual === 'match' ? 'Match!' : 'No match!';
     } else {
-      verdict = 'wrong';
-      message = 'Wrong!';
+      ({ verdict, headline: message, detail } = describeGuess(resolved));
     }
     // Show the drawn card over the old table for a beat, then commit.
-    setReveal({ card: drawn.card, verdict, message });
+    setReveal({ card: drawn.card, verdict, message, detail });
     setBusy(true);
     later(
       () => {
-        setSnap(next);
+        commit(action, next);
         setReveal(null);
         setBusy(false);
       },
@@ -92,28 +143,35 @@ export default function GameScreen({ config, resume, onExit, onPlayAgain }) {
 
   function onBank() {
     if (busy || !legal.bank) return;
-    const next = applyAction(state, { type: 'BANK' });
+    const action = { type: 'BANK' };
+    const next = applyAction(state, action);
     const refused = next.events.find((e) => e.type === 'BANK_REFUSED');
     if (refused) {
+      // A refused bank leaves the state untouched, but the *attempt* is real
+      // player behaviour worth replaying, so it still joins the log.
+      meta.current.actions.push(action);
       flash(`The ${refused.points}-point token isn't available — keep guessing or steep!`);
       return;
     }
-    setSnap(next);
+    commit(action, next);
   }
 
   function onSteep() {
     if (busy || !legal.steep) return;
-    setSnap(applyAction(state, { type: 'STEEP' }));
+    const action = { type: 'STEEP' };
+    commit(action, applyAction(state, action));
   }
 
   function onPlace(i) {
     if (busy || !placing) return;
-    setSnap(applyAction(state, { type: 'PLACE_FREE_SPACE', stackIndex: i }));
+    const action = { type: 'PLACE_FREE_SPACE', stackIndex: i };
+    commit(action, applyAction(state, action));
   }
 
   function onAdvance() {
     if (busy || !legal.advance) return;
-    const next = applyAction(state, { type: 'ADVANCE_TURN' });
+    const action = { type: 'ADVANCE_TURN' };
+    const next = applyAction(state, action);
     if (next.events.some((e) => e.type === 'ROUND_TWO_STARTED')) {
       announce('Round 2 — direction reverses!');
     }
@@ -121,7 +179,7 @@ export default function GameScreen({ config, resume, onExit, onPlayAgain }) {
     if (deals.length > 1 && next.state.phase === 'awaitingGuess') {
       flash('Free Space on the deal — bonus card dealt!');
     }
-    setSnap(next);
+    commit(action, next);
   }
 
   return (
@@ -147,7 +205,7 @@ export default function GameScreen({ config, resume, onExit, onPlayAgain }) {
       )}
 
       <div className="turn-line">
-        <span className="player-chip">Player {state.currentPlayer + 1}</span>
+        <span className="player-chip">{names[state.currentPlayer]}</span>
         <span className="pot-line">
           Pot: {pot} point{pot === 1 ? '' : 's'}
         </span>
@@ -205,7 +263,10 @@ export default function GameScreen({ config, resume, onExit, onPlayAgain }) {
         {reveal && (
           <div className="reveal-overlay">
             <CardView card={reveal.card} className="flip" />
-            <div className={`verdict ${reveal.verdict}`}>{reveal.message}</div>
+            <div className={`verdict ${reveal.verdict}`} role="status">
+              <div className="verdict-headline">{reveal.message}</div>
+              <Explanation parts={reveal.detail} />
+            </div>
           </div>
         )}
       </main>
@@ -216,7 +277,9 @@ export default function GameScreen({ config, resume, onExit, onPlayAgain }) {
             key={i}
             className={`player-panel ${i === state.currentPlayer && state.phase !== 'gameOver' ? 'active' : ''}`}
           >
-            <div className="player-name">P{i + 1}</div>
+            <div className="player-name" title={names[i]}>
+              {names[i]}
+            </div>
             <div className="player-score">{p.score}</div>
             {isTokenMode && (
               <div className="player-tokens">
@@ -269,11 +332,20 @@ export default function GameScreen({ config, resume, onExit, onPlayAgain }) {
       {toast && <div className="toast">{toast}</div>}
       {banner && <div className="banner">{banner}</div>}
 
-      {state.phase === 'turnOver' && !busy && <TurnOverModal state={state} onAdvance={onAdvance} />}
+      {state.phase === 'turnOver' && !busy && <TurnOverModal state={state} names={names} onAdvance={onAdvance} />}
       {state.phase === 'gameOver' && (
         <GameOverModal
           state={state}
-          onPlayAgain={() => onPlayAgain({ numPlayers: state.numPlayers, scoringMode: state.scoringMode })}
+          names={names}
+          onPlayAgain={() =>
+            onPlayAgain({
+              numPlayers: state.numPlayers,
+              scoringMode: state.scoringMode,
+              // A rematch keeps the same people in the same seats.
+              seatProfiles: meta.current.seatProfiles,
+              playerNames: names,
+            })
+          }
           onHome={onExit}
         />
       )}

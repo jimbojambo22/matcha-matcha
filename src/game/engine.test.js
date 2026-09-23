@@ -12,6 +12,7 @@ import {
   tableCardCount,
   visibleSuits,
   visibleNumbers,
+  matchDetails,
 } from './engine.js';
 
 // --- helpers ---------------------------------------------------------------
@@ -112,6 +113,22 @@ describe('matching', () => {
     const snap = game([N('leaf', 1), DS('cup', 'leaf')]);
     const { state } = step(snap, guess('match'));
     expect(state.stacks).toHaveLength(2);
+  });
+
+  it('reports which suits/numbers matched, for explaining a result', () => {
+    // Table leaf-1, then a wrong 'nomatch' on leaf-5: the leaf matched.
+    const snap = game([N('leaf', 1), N('leaf', 5)]);
+    const { state, events } = step(snap, guess('nomatch'));
+    const resolved = events.find((e) => e.type === 'GUESS_RESOLVED');
+    expect(resolved.matched).toEqual({ suits: ['leaf'], numbers: [] });
+    expect(state.outcome).toMatchObject({ reason: 'wrong', card: { id: 'leaf-5' }, matched: { suits: ['leaf'] } });
+  });
+
+  it('matchDetails lists both halves of a Matcha-Matcha and ignores covered cards', () => {
+    const snap = game([N('leaf', 1), N('cup', 5)]);
+    const { state } = step(snap, guess('nomatch')); // table: leaf-1, cup-5
+    expect(matchDetails(state, N('leaf', 5))).toEqual({ suits: ['leaf'], numbers: [5] });
+    expect(matchDetails(state, DS('whisk', 'teapot'))).toEqual({ suits: [], numbers: [] });
   });
 
   it('dual-number cards match on either number', () => {

@@ -153,6 +153,21 @@ export function visibleNumbers(state) {
   return [...numbers];
 }
 
+/**
+ * Which of `card`'s suits and numbers are live on the table right now.
+ * This IS the matching rule's input: any suit hit = suit match, any number
+ * hit = number match, both = Matcha-Matcha. Exposed so the UI can explain a
+ * result ("the leaf matched") without re-deriving the rule itself.
+ */
+export function matchDetails(state, card) {
+  const suits = visibleSuits(state);
+  const numbers = visibleNumbers(state);
+  return {
+    suits: cardSuits(card).filter((s) => suits.includes(s)),
+    numbers: cardNumbers(card).filter((n) => numbers.includes(n)),
+  };
+}
+
 /** Every card on the table is worth a point, covered or not. */
 export function tableCardCount(state) {
   return state.stacks.reduce((n, s) => n + s.length, 0);
@@ -358,22 +373,21 @@ function doGuess(state, events, guess) {
   // Table-wide matching: the drawn card is compared against ALL face-up
   // cards at once. Suit anywhere AND number anywhere — possibly on two
   // different cards — is a Matcha-Matcha.
-  const suits = visibleSuits(state);
-  const numbers = visibleNumbers(state);
-  const suitMatch = cardSuits(card).some((s) => suits.includes(s));
-  const numberMatch = cardNumbers(card).some((n) => numbers.includes(n));
+  const matched = matchDetails(state, card);
+  const suitMatch = matched.suits.length > 0;
+  const numberMatch = matched.numbers.length > 0;
   const actual = suitMatch && numberMatch ? 'matcha' : suitMatch || numberMatch ? 'match' : 'nomatch';
 
   if (actual === 'matcha') {
-    events.push({ type: 'GUESS_RESOLVED', card, guess, actual, correct: false });
-    bust(state, events, 'matcha');
+    events.push({ type: 'GUESS_RESOLVED', card, guess, actual, correct: false, matched });
+    bust(state, events, 'matcha', card, matched);
   } else if (actual === guess) {
     addCardToTable(state, card);
     state.hasSuccessfulGuess = true;
-    events.push({ type: 'GUESS_RESOLVED', card, guess, actual, correct: true });
+    events.push({ type: 'GUESS_RESOLVED', card, guess, actual, correct: true, matched });
   } else {
-    events.push({ type: 'GUESS_RESOLVED', card, guess, actual, correct: false });
-    bust(state, events, 'wrong');
+    events.push({ type: 'GUESS_RESOLVED', card, guess, actual, correct: false, matched });
+    bust(state, events, 'wrong', card, matched);
   }
 }
 
@@ -507,13 +521,15 @@ function tryTradeIn(state, events) {
   return null;
 }
 
-function bust(state, events, reason) {
+function bust(state, events, reason, card = null, matched = null) {
   const p = currentP(state);
   state.outcome = {
     kind: 'bust',
     reason, // 'wrong' | 'matcha'
     lostTable: tableCardCount(state),
     lostPot: p.potHidden.length,
+    card, // the card that busted the turn (display only)
+    matched, // { suits, numbers } of that card live on the table (display only)
   };
   p.potHidden = [];
   events.push({ type: 'BUST', player: state.currentPlayer, reason });
